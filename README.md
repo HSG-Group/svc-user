@@ -639,6 +639,14 @@ CREATE TABLE outbox (
 
 ## Local development
 
+go mod init user-svc
+
+go mod tidy (same with "npm install")
+
+go mod download
+
+go get github.com/jackc/pgx/v5/pgxpool github.com/redis/go-redis/v9 github.com/segmentio/kafka-go github.com/google/uuid google.golang.org/grpc google.golang.org/protobuf github.com/aws/aws-sdk-go-v2/config github.com/aws/aws-sdk-go-v2/service/s3
+
 ### Prerequisites
 
 - Go 1.22+
