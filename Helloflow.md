@@ -83,15 +83,26 @@ domain/hello
 
 ---
 
-## Key Rule: Dependency Direction
+## Dependency Rule Audit
 
-> **Dependencies always point inward.**
+> **Dependencies always point inward — verified against actual source imports.**
 
-| Layer             | Can import                               |
-| ----------------- | ---------------------------------------- |
-| `domain/`         | Go standard library only                 |
-| `application/`    | `domain/` only                           |
-| `infrastructure/` | `application/`, `domain/`, external libs |
-| `cmd/main.go`     | All layers (wiring only)                 |
+| File                                       | Layer             | Imports                                                                             | Status                            |
+| ------------------------------------------ | ----------------- | ----------------------------------------------------------------------------------- | --------------------------------- |
+| `domain/hello/model.go`                    | `domain/`         | `"errors"`, `"strings"`, `"time"` (all stdlib)                                      | ✅ stdlib only                    |
+| `application/ports/hello_repo.go`          | `application/`    | `"context"` (stdlib)                                                                | ✅ stdlib only                    |
+| `application/query/get_hello.go`           | `application/`    | `"context"` + `application/ports` + `domain/hello`                                  | ✅ `domain/` + sibling ports only |
+| `infrastructure/persistence/hello_repo.go` | `infrastructure/` | `"context"` (stdlib)                                                                | ✅ no upward violations           |
+| `infrastructure/http/hello_handler.go`     | `infrastructure/` | `"net/http"` + `application/query`                                                  | ✅ imports `application/`         |
+| `cmd/main.go`                              | `cmd/`            | stdlib + `application/query` + `infrastructure/http` + `infrastructure/persistence` | ✅ wires all layers               |
 
-The **Domain** knows nothing about HTTP or databases. This is the core guarantee of Clean Architecture.
+### Import Rules Summary
+
+| Layer             | May import                                  |
+| ----------------- | ------------------------------------------- |
+| `domain/`         | Go standard library only                    |
+| `application/`    | `domain/` only                              |
+| `infrastructure/` | `application/`, `domain/`, external drivers |
+| `cmd/main.go`     | All layers (wiring only)                    |
+
+> **Note on implicit interface satisfaction:** `infrastructure/persistence/hello_repo.go` does not explicitly import `application/ports`. Instead, `cmd/main.go` passes `*MemoryHelloRepo` into `query.NewGetHelloHandler()`, which accepts the `ports.HelloRepo` interface. Go satisfies interfaces **implicitly**, so the compiler enforces the contract without a direct import — this is idiomatic Go and not a violation.

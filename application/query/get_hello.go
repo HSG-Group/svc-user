@@ -32,7 +32,11 @@ func (h *GetHelloHandler) Handle(ctx context.Context, q GetHelloQuery) (string, 
 		return "", err
 	}
 
-	// Let Domain layer apply business rules/formatting
-	msg := hello.NewMessage(name)
-	return string(msg), nil
+	// Let Domain layer apply business rules/formatting (may return validation error)
+	msg, err := hello.NewMessage(name)
+	if err != nil {
+		return "", err
+	}
+
+	return msg.Text, nil
 }
