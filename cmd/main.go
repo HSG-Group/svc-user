@@ -6,13 +6,23 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/joho/godotenv"
+
 	"user-svc/application/query"
 	infrahttp "user-svc/infrastructure/http"
 	"user-svc/infrastructure/persistence"
 )
 
 func main() {
+	// port := os.Getenv("PORT")
+	// Load .env file BEFORE reading env vars
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using system env vars")
+	}
+
 	port := os.Getenv("PORT")
+	log.Println("PORT from env file: ", port)
+
 	if port == "" {
 		port = "8083"
 	}
