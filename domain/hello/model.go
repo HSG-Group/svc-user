@@ -15,6 +15,8 @@ type Message struct {
 // NewMessage validates the name and applies domain formatting rules.
 // It uses only Go standard library — no external dependencies allowed in domain/.
 func NewMessage(name string) (*Message, error) {
+	println("Domain - Model - NewMessage...")
+
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return nil, errors.New("name cannot be empty")
