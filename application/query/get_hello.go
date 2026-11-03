@@ -12,22 +12,29 @@ type GetHelloQuery struct{}
 
 // GetHelloHandler orchestrates the use-case.
 type GetHelloHandler struct {
-	repo ports.HelloRepo
+	helloRepo ports.HelloRepo
 }
 
 // NewGetHelloHandler acts as the constructor.
-func NewGetHelloHandler(repo ports.HelloRepo) *GetHelloHandler {
-	return &GetHelloHandler{repo: repo}
+func NewGetHelloHandler(repoParam ports.HelloRepo) *GetHelloHandler {
+	return &GetHelloHandler{helloRepo: repoParam}
 }
 
 // Handle executes the Application logic.
 // It fetches data from Infra via Ports, and passes it to the Domain layer.
-func (h *GetHelloHandler) Handle(ctx context.Context, q GetHelloQuery) (string, error) {
+/**
+* @param h *GetHelloHandler - The handler instance. (receiver)
+* @param ctx context.Context - The context for the request.
+* @param query GetHelloQuery - The query object containing the input parameters.
+* @return string - The resulting message text.
+* @return error - An error if any occurred during processing.
+ */
+func (h *GetHelloHandler) Handle(ctx context.Context, query GetHelloQuery) (string, error) {
 	// Log the incoming request
 	println("Application - Query - Handling GetHelloQuery...")
 
 	// Call to Infrastructure (via port interface)
-	name, err := h.repo.GetStaticName(ctx)
+	name, err := h.helloRepo.GetStaticName(ctx)
 	if err != nil {
 		return "", err
 	}

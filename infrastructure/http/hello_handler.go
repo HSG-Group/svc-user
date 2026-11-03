@@ -16,6 +16,11 @@ func NewHelloHandler(getHello *query.GetHelloHandler) *HelloHandler {
 }
 
 // ServeHTTP implements the standard Go http.Handler interface.
+/*
+	type Handler interface {
+		ServeHTTP(ResponseWriter, *Request)
+	}
+*/
 func (h *HelloHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Log the incoming request
