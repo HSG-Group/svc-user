@@ -2,6 +2,8 @@ package query
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"user-svc/application/ports"
 	"user-svc/domain/hello"
@@ -30,16 +32,28 @@ func NewGetHelloHandler(repoParam ports.HelloRepo) *GetHelloHandler {
 * @return error - An error if any occurred during processing.
  */
 func (h *GetHelloHandler) Handle(ctx context.Context, query GetHelloQuery) (string, error) {
-	// Log the incoming request
-	println("Application - Query - Handling GetHelloQuery...")
+	fmt.Println("Application - Query - Handling GetHelloQuery...")
 
-	// Call to Infrastructure (via port interface)
+	// 1. Whole context chain (type + nested WithValue/WithCancel layers)
+	fmt.Printf("Application - Query - Handle - ctx: %v\n", ctx)
+	fmt.Printf("Application - Query - Handle - ctx type: %T\n", ctx)
+
+	// 2. Deadline / cancellation state
+	if deadline, ok := ctx.Deadline(); ok {
+		fmt.Printf("Application - Query - Handle - deadline: %v (in %v)\n", deadline, time.Until(deadline))
+	} else {
+		fmt.Println("Application - Query - Handle - deadline: none")
+	}
+	fmt.Printf("Application - Query - Handle - ctx.Err(): %v\n", ctx.Err())
+
+	// 3. Specific values you put in the context
+	// fmt.Printf("Application - Query - Handle - requestID: %v\n", ctx.Value(requestIDKey))
+
 	name, err := h.helloRepo.GetStaticName(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	// Let Domain layer apply business rules/formatting (may return validation error)
 	msg, err := hello.NewMessage(name)
 	if err != nil {
 		return "", err
