@@ -8,4 +8,5 @@ import (
 // Notice it knows nothing about HTTP or the database explicitly.
 type HelloRepo interface {
 	GetStaticName(ctx context.Context) (string, error)
+	GetDynamicName(ctx context.Context) (string, error)
 }

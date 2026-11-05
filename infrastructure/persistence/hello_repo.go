@@ -20,3 +20,11 @@ func (m *MemoryHelloRepo) GetStaticName(ctx context.Context) (string, error) {
 	println("Infrastructure - HelloRepo Fetching static name...")
 	return "World", nil
 }
+
+// implement GetDynamicName to satisfy the HelloRepo interface
+func (m *MemoryHelloRepo) GetDynamicName(ctx context.Context) (string, error) {
+	// Hardcoded response simulating a database lookup
+	println("Infrastructure - HelloRepo Fetching dynamic name...")
+	println("Show context value:", ctx.Value("userID"))
+	return "Dynamic World", nil
+}

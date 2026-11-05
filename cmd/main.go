@@ -39,6 +39,18 @@ func main() {
 	// 4. Register Routes
 	http.Handle("/hello", helloHandler)
 
+	// 1. Initialize Infrastructure adapters
+	studentRepo := persistence.NewMemoryStudentRepo()
+
+	// 2. Initialize Application use cases
+	getStudent := query.NewGetStudentHandler(studentRepo)
+
+	// 3. Initialize HTTP handlers
+	studentHandler := infrahttp.NewStudentHandler(getStudent)
+
+	// 4. Register Routes
+	http.Handle("/student", studentHandler)
+
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
