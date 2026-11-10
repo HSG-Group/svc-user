@@ -52,7 +52,7 @@ func main() {
 	router := infrahttp.NewRouterWithMux(infrahttp.Handlers{
 		Hello:   helloHandler,
 		Student: studentHandler,
-	})
+	}, infrahttp.FakeValidator{})
 
 	fmt.Printf("User Service is starting on port %s...\n", port)
 	if err := http.ListenAndServe(":"+port, router); err != nil {

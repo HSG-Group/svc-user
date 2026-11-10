@@ -15,10 +15,18 @@ type Handlers struct {
 	// Search   *SearchHandler
 }
 
-func NewRouterWithMux(h Handlers) http.Handler {
+func NewRouterWithMux(h Handlers, auth TokenValidator) http.Handler {
 	mux := http.NewServeMux()
 
-	// ---------- Public ----------
+	// Per-route chains
+	authed := func(hf http.HandlerFunc) http.Handler {
+		return Chain(hf, Auth(auth))
+	}
+	// ownOnly := func(hf http.HandlerFunc) http.Handler {
+	// 	return Chain(hf, Auth(auth), OwnProfileOnly()) // Auth runs first, then ownership
+	// }
+
+	// ---------- Public (no auth) ----------
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
@@ -26,27 +34,24 @@ func NewRouterWithMux(h Handlers) http.Handler {
 	mux.HandleFunc("GET /hello", h.Hello.ServeHTTP)
 
 	// ---------- Students ----------
-	mux.HandleFunc("GET /students", h.Student.List)
-	mux.HandleFunc("GET /students/{id}", h.Student.GetByID)
-	mux.HandleFunc("GET /students/{id}/courses", h.Student.ListCourses)
+	mux.Handle("GET /students", authed(h.Student.List))
+	mux.Handle("GET /students/{id}", authed(h.Student.GetByID))
+	mux.Handle("GET /students/{id}/courses", authed(h.Student.ListCourses))
 
-	// ---------- Users (enable as handlers are built) ----------
-	// mux.HandleFunc("GET /users/search",                    h.Search.Search)
-	// mux.HandleFunc("GET /users/{id}",                      h.Profile.Get)
-	// mux.HandleFunc("PATCH /users/{id}",                    h.Profile.Update)
-	// mux.HandleFunc("POST /users/{id}/avatar",              h.Avatar.Upload)
-	//
-	// mux.HandleFunc("GET /users/{id}/presence",             h.Presence.Get)
-	// mux.HandleFunc("PUT /users/{id}/presence",             h.Presence.Set)
-	//
-	// mux.HandleFunc("GET /users/{id}/friends",              h.Friends.List)
-	// mux.HandleFunc("GET /users/{id}/friends/pending",      h.Friends.ListPending)
-	// mux.HandleFunc("POST /users/{id}/friends",             h.Friends.Send)
-	// mux.HandleFunc("PATCH /users/{id}/friends/{friendId}", h.Friends.Accept)
-	// mux.HandleFunc("DELETE /users/{id}/friends/{friendId}",h.Friends.Remove)
-	//
-	// mux.HandleFunc("POST /users/{id}/blocks",              h.Profile.Block)
-	// mux.HandleFunc("DELETE /users/{id}/blocks/{targetId}", h.Profile.Unblock)
+	// ---------- Users (matches the README table) ----------
+	// mux.Handle("GET /users/search",               authed(h.Search.Search))
+	// mux.Handle("GET /users/{id}",                 authed(h.Profile.Get))
+	// mux.Handle("PATCH /users/{id}",               ownOnly(h.Profile.Update))
+	// mux.Handle("POST /users/{id}/avatar",         ownOnly(h.Avatar.Upload))
+	// mux.Handle("PUT /users/{id}/presence",        ownOnly(h.Presence.Set))
+	// mux.Handle("GET /users/{id}/friends/pending", ownOnly(h.Friends.ListPending))
+	// mux.Handle("POST /users/{id}/blocks",         ownOnly(h.Profile.Block))
+	// mux.Handle("DELETE /users/{id}/blocks/{targetId}", ownOnly(h.Profile.Unblock))
 
-	return mux
+	// Global middleware: wraps EVERYTHING (including /health and 404s)
+	return Chain(mux,
+		Recovery(), // outermost: catches panics from everything below
+		Logging(),
+		CORS("*"),
+	)
 }
