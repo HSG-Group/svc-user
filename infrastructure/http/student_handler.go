@@ -9,12 +9,20 @@ import (
 
 // StudentHandler handles incoming HTTP traffic for /students routes.
 type StudentHandler struct {
-	getStudent *query.GetStudentHandler
+	listStudents       *query.ListStudentsHandler
+	getStudentByID     *query.GetStudentByIDHandler
+	listStudentCourses *query.ListStudentCoursesHandler
 }
 
-func NewStudentHandler(getStudent *query.GetStudentHandler) *StudentHandler {
+func NewStudentHandler(
+	listStudents *query.ListStudentsHandler,
+	getStudentByID *query.GetStudentByIDHandler,
+	listStudentCourses *query.ListStudentCoursesHandler,
+) *StudentHandler {
 	return &StudentHandler{
-		getStudent: getStudent,
+		listStudents:       listStudents,
+		getStudentByID:     getStudentByID,
+		listStudentCourses: listStudentCourses,
 	}
 }
 
@@ -22,17 +30,14 @@ func NewStudentHandler(getStudent *query.GetStudentHandler) *StudentHandler {
 func (h *StudentHandler) List(w http.ResponseWriter, r *http.Request) {
 	println("Infrastructure - StudentHandler - List")
 
-	result, err := h.getStudent.Handle(
-		r.Context(),
-		query.GetStudentQuery{},
-	)
+	students, err := h.listStudents.Handle(r.Context(), query.ListStudentsQuery{})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(result))
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(students)
 }
 
 // GetByID handles GET /students/{id} — returns a single student.
@@ -45,13 +50,14 @@ func (h *StudentHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: wire up a dedicated GetStudentByID use-case.
-	// For now, return a simple JSON placeholder using the id.
+	student, err := h.getStudentByID.Handle(r.Context(), query.GetStudentByIDQuery{ID: id})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"id":      id,
-		"message": "student " + id,
-	})
+	json.NewEncoder(w).Encode(student)
 }
 
 // ListCourses handles GET /students/{id}/courses.
@@ -64,10 +70,12 @@ func (h *StudentHandler) ListCourses(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: wire up a ListCoursesByStudent use-case.
+	courses, err := h.listStudentCourses.Handle(r.Context(), query.ListStudentCoursesQuery{StudentID: id})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"student_id": id,
-		"message":    "courses for student " + id,
-	})
+	json.NewEncoder(w).Encode(courses)
 }

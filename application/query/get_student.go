@@ -3,61 +3,95 @@ package query
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"user-svc/application/ports"
-	"user-svc/domain/hello"
+	"user-svc/domain/student"
 )
 
-// GetStudentQuery defines the input payload for the use-case.
-type GetStudentQuery struct{}
+// ---------------------------------------------------------------------------
+// List all students
+// ---------------------------------------------------------------------------
 
-// GetStudentHandler orchestrates the use-case.
-type GetStudentHandler struct {
+// ListStudentsQuery defines the input payload for listing students.
+type ListStudentsQuery struct{}
+
+// ListStudentsHandler orchestrates the list-students use-case.
+type ListStudentsHandler struct {
 	studentRepo ports.StudentRepo
 }
 
-// NewGetStudentHandler acts as the constructor.
-func NewGetStudentHandler(repoParam ports.StudentRepo) *GetStudentHandler {
-	return &GetStudentHandler{studentRepo: repoParam}
+func NewListStudentsHandler(repo ports.StudentRepo) *ListStudentsHandler {
+	return &ListStudentsHandler{studentRepo: repo}
 }
 
-// Handle executes the Application logic.
-// It fetches data from Infra via Ports, and passes it to the Domain layer.
-/**
-* @param h *GetStudentHandler - The handler instance. (receiver)
-* @param ctx context.Context - The context for the request.
-* @param query GetStudentQuery - The query object containing the input parameters.
-* @return string - The resulting message text.
-* @return error - An error if any occurred during processing.
- */
-func (h *GetStudentHandler) Handle(ctx context.Context, query GetStudentQuery) (string, error) {
-	fmt.Println("Application - Query - Handling GetStudentQuery...")
+// Handle returns every student from the repository.
+func (h *ListStudentsHandler) Handle(ctx context.Context, _ ListStudentsQuery) ([]student.StudentRecord, error) {
+	fmt.Println("Application - Query - Handling ListStudentsQuery...")
 
-	// 1. Whole context chain (type + nested WithValue/WithCancel layers)
-	fmt.Printf("Application - Query - Handle - ctx: %v\n", ctx)
-	fmt.Printf("Application - Query - Handle - ctx type: %T\n", ctx)
-
-	// 2. Deadline / cancellation state
-	if deadline, ok := ctx.Deadline(); ok {
-		fmt.Printf("Application - Query - Handle - deadline: %v (in %v)\n", deadline, time.Until(deadline))
-	} else {
-		fmt.Println("Application - Query - Handle - deadline: none")
-	}
-	fmt.Printf("Application - Query - Handle - ctx.Err(): %v\n", ctx.Err())
-
-	// 3. Specific values you put in the context
-	// fmt.Printf("Application - Query - Handle - requestID: %v\n", ctx.Value(requestIDKey))
-
-	name, err := h.studentRepo.GetStudentName(ctx)
+	students, err := h.studentRepo.GetStudents(ctx)
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("list students: %w", err)
 	}
 
-	msg, err := hello.NewMessage(name)
+	return students, nil
+}
+
+// ---------------------------------------------------------------------------
+// Get a single student by ID
+// ---------------------------------------------------------------------------
+
+// GetStudentByIDQuery defines the input payload.
+type GetStudentByIDQuery struct {
+	ID string
+}
+
+// GetStudentByIDHandler orchestrates the get-student-by-id use-case.
+type GetStudentByIDHandler struct {
+	studentRepo ports.StudentRepo
+}
+
+func NewGetStudentByIDHandler(repo ports.StudentRepo) *GetStudentByIDHandler {
+	return &GetStudentByIDHandler{studentRepo: repo}
+}
+
+// Handle returns a single student identified by ID.
+func (h *GetStudentByIDHandler) Handle(ctx context.Context, q GetStudentByIDQuery) (student.StudentRecord, error) {
+	fmt.Printf("Application - Query - Handling GetStudentByIDQuery (id=%s)...\n", q.ID)
+
+	record, err := h.studentRepo.GetStudentByID(ctx, q.ID)
 	if err != nil {
-		return "", err
+		return student.StudentRecord{}, fmt.Errorf("get student %s: %w", q.ID, err)
 	}
 
-	return msg.Text, nil
+	return record, nil
+}
+
+// ---------------------------------------------------------------------------
+// List courses for a student
+// ---------------------------------------------------------------------------
+
+// ListStudentCoursesQuery defines the input payload.
+type ListStudentCoursesQuery struct {
+	StudentID string
+}
+
+// ListStudentCoursesHandler orchestrates the list-courses use-case.
+type ListStudentCoursesHandler struct {
+	studentRepo ports.StudentRepo
+}
+
+func NewListStudentCoursesHandler(repo ports.StudentRepo) *ListStudentCoursesHandler {
+	return &ListStudentCoursesHandler{studentRepo: repo}
+}
+
+// Handle returns every course for the given student.
+func (h *ListStudentCoursesHandler) Handle(ctx context.Context, q ListStudentCoursesQuery) ([]student.Course, error) {
+	fmt.Printf("Application - Query - Handling ListStudentCoursesQuery (studentId=%s)...\n", q.StudentID)
+
+	courses, err := h.studentRepo.GetStudentCourses(ctx, q.StudentID)
+	if err != nil {
+		return nil, fmt.Errorf("list courses for student %s: %w", q.StudentID, err)
+	}
+
+	return courses, nil
 }

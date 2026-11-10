@@ -10,6 +10,7 @@ import (
 // In reality, this might connect to a PostgreSQL database via pgx.
 type MemoryStudentRepo struct {
 	students []student.StudentRecord
+	courses  map[string][]student.Course // studentID -> courses
 }
 
 func NewMemoryStudentRepo() *MemoryStudentRepo {
@@ -27,6 +28,20 @@ func NewMemoryStudentRepo() *MemoryStudentRepo {
 			{ID: "8", Name: "Hannah", Address: "246 Spruce St", Phone: "555-0123", Status: "inactive", School: "School H"},
 			{ID: "9", Name: "Ian", Address: "357 Willow St", Phone: "555-4567", Status: "active", School: "School I"},
 			{ID: "10", Name: "Jack", Address: "468 Aspen St", Phone: "555-8901", Status: "active", School: "School J"},
+		},
+		courses: map[string][]student.Course{
+			"1": {
+				{ID: "CS101", Name: "Intro to CS", Instructor: "Dr. Smith", Semester: "2026-1"},
+				{ID: "MATH201", Name: "Linear Algebra", Instructor: "Dr. Lee", Semester: "2026-1"},
+			},
+			"2": {
+				{ID: "ENG101", Name: "English Literature", Instructor: "Dr. Brown", Semester: "2026-1"},
+			},
+			"3": {
+				{ID: "CS101", Name: "Intro to CS", Instructor: "Dr. Smith", Semester: "2026-1"},
+				{ID: "PHY101", Name: "Physics I", Instructor: "Dr. Nguyen", Semester: "2026-1"},
+				{ID: "MATH201", Name: "Linear Algebra", Instructor: "Dr. Lee", Semester: "2026-1"},
+			},
 		},
 	}
 }
@@ -54,4 +69,21 @@ func (r *MemoryStudentRepo) GetStudentByID(
 func (r *MemoryStudentRepo) GetStudents(ctx context.Context) ([]student.StudentRecord, error) {
 	// Simulate a database query by returning the in-memory slice of students
 	return r.students, nil
+}
+
+func (r *MemoryStudentRepo) GetStudentCourses(ctx context.Context, id string) ([]student.Course, error) {
+	// First check the student exists
+	found := false
+	for _, s := range r.students {
+		if s.ID == id {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, fmt.Errorf("student %q not found", id)
+	}
+
+	courses := r.courses[id] // returns nil slice if no courses, which is fine
+	return courses, nil
 }

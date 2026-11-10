@@ -41,10 +41,12 @@ func main() {
 	studentRepo := persistence.NewMemoryStudentRepo()
 
 	// 2. Initialize Application use cases
-	getStudent := query.NewGetStudentHandler(studentRepo)
+	listStudents := query.NewListStudentsHandler(studentRepo)
+	getStudentByID := query.NewGetStudentByIDHandler(studentRepo)
+	listStudentCourses := query.NewListStudentCoursesHandler(studentRepo)
 
 	// 3. Initialize HTTP handlers
-	studentHandler := infrahttp.NewStudentHandler(getStudent)
+	studentHandler := infrahttp.NewStudentHandler(listStudents, getStudentByID, listStudentCourses)
 
 	// 4. Build the router (all routes registered inside)
 	router := infrahttp.NewRouterWithMux(infrahttp.Handlers{
