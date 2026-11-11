@@ -89,13 +89,18 @@ func Auth(v TokenValidator) Middleware {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			header := r.Header.Get("Authorization")
 			token, ok := strings.CutPrefix(header, "Bearer ")
+
+			// If the token is missing or empty, return an unauthorized error
 			if !ok || token == "" {
 				http.Error(w, "missing bearer token", http.StatusUnauthorized)
 				return
 			}
+
+			// Validate the token using the provided TokenValidator
 			userID, err := v.Validate(token)
 			if err != nil {
-				http.Error(w, "invalid token", http.StatusUnauthorized)
+				// http.Error(w, "invalid token", http.StatusUnauthorized)
+				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)
