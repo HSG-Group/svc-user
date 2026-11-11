@@ -104,6 +104,17 @@ user-svc ──► user.presence.changed    ──► ws-gateway (fan-out to fri
 | `infrastructure/` | `application/`, `domain/`, external drivers |
 | `cmd/main.go`     | All layers (wiring only)                    |
 
+cmd → infrastructure → application → domain
+
++ domain/ holds business concepts and rules. It should not depend on HTTP handlers, databases, or other outer layers.
++ application/ coordinates use cases. It can use domain types and the repository interfaces (“ports”) that its use cases need.
++ infrastructure/ provides the concrete details: HTTP handlers, database repositories, and other adapters. It implements or calls the application’s ports.
++ cmd/main.go wires the pieces together—for example, creating a repository, passing it to a use case, and registering the handler.
+
+One detail: the table’s application/ row is oversimplified for your project. Since you have application/ports/, application packages may import other packages within application/ as well as domain/ and the standard library. The important rule is that application logic should not import infrastructure.
+
+That separation makes it easier to replace a hard-coded repository with a database implementation without rewriting the use cases.
+
 ---
 
 ## Folder structure
