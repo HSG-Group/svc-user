@@ -36,16 +36,26 @@ func main() {
 	// 3. Initialize HTTP handlers
 	helloHandler := infrahttp.NewHelloHandler(getHello)
 
-	// 4. Register Routes
-	http.Handle("/hello", helloHandler)
+	//------------ STUDENT HANDLER ----------------
+	// 1. Initialize Infrastructure adapters
+	studentRepo := persistence.NewMemoryStudentRepo()
 
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
-	})
+	// 2. Initialize Application use cases
+	listStudents := query.NewListStudentsHandler(studentRepo)
+	getStudentByID := query.NewGetStudentByIDHandler(studentRepo)
+	listStudentCourses := query.NewListStudentCoursesHandler(studentRepo)
+
+	// 3. Initialize HTTP handlers
+	studentHandler := infrahttp.NewStudentHandler(listStudents, getStudentByID, listStudentCourses)
+
+	// 4. Build the router (all routes registered inside)
+	router := infrahttp.NewRouterWithMux(infrahttp.Handlers{
+		Hello:   helloHandler,
+		Student: studentHandler,
+	}, infrahttp.FakeValidator{})
 
 	fmt.Printf("User Service is starting on port %s...\n", port)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
+	if err := http.ListenAndServe(":"+port, router); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
 }
